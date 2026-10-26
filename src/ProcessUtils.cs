@@ -5,6 +5,64 @@ namespace EstrellasDeEsperanza.PrejitAll;
 
 public static class ProcessUtils
 {
+
+    public static IEnumerable<string> Paths
+    {
+        get
+        {
+            string? proc, machine = "", user = "";
+            string?[] sources;
+            proc = System.Environment.GetEnvironmentVariable("PATH");
+            if (DotnetInfo.IsWindows)
+            {
+                machine = System.Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine);
+                user = System.Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User);
+                var process = System.Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Process);
+                sources = new string?[] {
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.System),
+                    System.Environment.GetFolderPath(System.Environment.SpecialFolder.SystemX86),
+                    process, machine, user };
+            }
+            else sources = new string[] { proc };
+
+            return sources
+                .SelectMany(paths => paths.Split(new char[] { Path.PathSeparator }, StringSplitOptions.RemoveEmptyEntries))
+                .Where(path => path != null)
+                .Select(path => path.Trim())
+                .Distinct();
+        }
+    }
+
+    public static string? Find(string cmd)
+    {
+        string? file = null;
+        cmd = cmd.Trim('"');
+        if (cmd.IndexOf(Path.DirectorySeparatorChar) >= 0)
+        {
+            if (File.Exists(cmd)) file = cmd;
+        }
+        else
+        {
+            if (DotnetInfo.IsWindows)
+            {
+                file = Paths
+                      .SelectMany(p =>
+                      {
+                          var p1 = Path.Combine(p, cmd);
+                          return new string[] { p1, p1 + ".exe" };
+                      })
+                      .FirstOrDefault(p => File.Exists(p));
+            }
+            else
+            {
+                file = Paths
+                    .Select(p => Path.Combine(p, cmd))
+                    .FirstOrDefault(p => File.Exists(p));
+            }
+        }
+        return file;
+    }
+
     public static async Task<string> RunProcessAsync(
         string path,
         string args = "",
@@ -21,7 +79,7 @@ public static class ProcessUtils
         {
             var processStartInfo = new ProcessStartInfo
             {
-                FileName = path,
+                FileName = Find(path),
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardError = true,

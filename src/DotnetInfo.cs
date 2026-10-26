@@ -172,6 +172,7 @@ public static class DotnetInfo
             Logger.LogMessage("Downloading crossgen2...");
             tempfile = await DownloadFileAsync(url, "zip");
             await UnzipZipFile(tempfile, tempdir, file => file.StartsWith("tools/"));
+            if (!IsWindows) await ProcessUtils.RunProcessAsync("chmod", $"+x \"{Path.Combine(tempdir, "tools", "crossgen2")}\"");
             return new TempCrossgen() { Filename = Path.Combine(tempdir, "tools", Crossgen2.Crossgen2Exe) };
         } catch (Exception ex)
         {
