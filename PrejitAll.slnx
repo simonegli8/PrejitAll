@@ -1,10 +1,9 @@
 <Solution>
   <Folder Name="/Solution Items/">
-    <File Path=".md" />
     <File Path="pack.bat" />
     <File Path="pack.sh" />
     <File Path="push-to-nuget.bat" />
-    <File Path="src/README.md" />
+    <File Path="README.md" />
   </Folder>
   <Project Path="src/PrejitAll.csproj" />
 </Solution>

@@ -1,13 +1,10 @@
 ﻿using System.Diagnostics;
 using System.IO.Compression;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading.Channels;
 
 namespace EstrellasDeEsperanza.PrejitAll;
 
@@ -119,10 +116,11 @@ public static class DotnetInfo
     }
 
     public static bool IsWindows => RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
-    [SupportedOSPlatformGuard("linux")]
     public static bool IsLinux => RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux);
-    [SupportedOSPlatformGuard("macos")]
     public static bool IsMac => RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+    public static bool IsCore => !(IsNetFX || IsNetNative);
+    public static bool IsNetFX => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
+    public static bool IsNetNative => RuntimeInformation.FrameworkDescription.StartsWith(".NET Native", StringComparison.OrdinalIgnoreCase);
 
     public static bool IsLinuxMusl
     {

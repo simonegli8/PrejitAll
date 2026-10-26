@@ -2,7 +2,7 @@
 
 public static class Crossgen2
 {
-    public static readonly string Crossgen2Exe = OperatingSystem.IsWindows() ? "crossgen2.exe" : "crossgen2";
+    public static readonly string Crossgen2Exe = DotnetInfo.IsWindows ? "crossgen2.exe" : "crossgen2";
 
     private static void PrintHelp()
     {
@@ -100,7 +100,7 @@ public static class Crossgen2
             Logger.LogDebug("==========================================================");
 
             var frameworkReferences = await DotnetInfo.GetCommonRuntimeConfig(path);
-            var referenceArguments = string.Join(' ', frameworkReferences
+            var referenceArguments = string.Join(" ", frameworkReferences
                 .Select(r => $"-r \"{r.Path}{Path.DirectorySeparatorChar}{r.VersionId}{Path.DirectorySeparatorChar}*.dll\""));
 
             string tempR2Rname = managedLibName + ".ni";

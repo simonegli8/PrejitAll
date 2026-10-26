@@ -120,7 +120,17 @@ public static class ProcessUtils
             };
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
+#if NETCOREAPP
             await process.WaitForExitAsync();
+#else
+            if (DotnetInfo.IsCore)
+            {
+                var type = typeof(Process);
+                var waitForExitAsync = type.GetMethod("WaitForExitAsync");
+                var task = (Task)waitForExitAsync.Invoke(process, Array.Empty<object>());
+                await task;
+            } else process.WaitForExit();
+#endif
         }
         catch (Exception e)
         {
