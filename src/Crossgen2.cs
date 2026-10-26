@@ -4,6 +4,7 @@ public static class Crossgen2
 {
     public static readonly string Crossgen2Exe = DotnetInfo.IsWindows ? "crossgen2.exe" : "crossgen2";
 
+#if Tool
     private static void PrintHelp()
     {
         Console.WriteLine("Run this tool to prejit all *.dll in the current directory");
@@ -30,9 +31,11 @@ public static class Crossgen2
         var path = args.FirstOrDefault();
         args = args.Skip(1).ToArray();
 
-        await PrejitAll(path, crossgenPath, args);
+        await PrejitAllAsync(path, crossgenPath, args);
     }
-    public static async Task PrejitAll(string? path, string? crossgenpath = null, params string[] customArgs) 
+#endif
+
+    public static async Task PrejitAllAsync(string? path, string? crossgenpath = null, params string[] customArgs) 
     {
         string customArg = string.Join(" ", customArgs.Select(a => $"\"{a}\""));
 

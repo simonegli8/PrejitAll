@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <PackAsTool Condition="$(PackAsTool) == ''">true</PackAsTool>
-        <OutputType>Exe</OutputType>
         <TargetFrameworks Condition="$(PackAsTool) == 'true'">net10.0</TargetFrameworks>
         <TargetFrameworks Condition="$(PackAsTool) != 'true'">netstandard2.0;net10.0</TargetFrameworks>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -9,6 +8,8 @@
         <LangVersion>14</LangVersion>
         <ToolCommandName>prejitall</ToolCommandName>
         <PackageOutputPath>../nupkg</PackageOutputPath>
+        <OutputType Condition="$(PackAsTool) == 'true'">Exe</OutputType>
+        <OutputType Condition="$(PackAsTool) != 'true'">Library</OutputType>
 
         <PackageId Condition="$(PackAsTool) == 'true'">EstrellasDeEsperanza.PrejitAll</PackageId>
         <PackageId Condition="$(PackAsTool) == 'false'">EstrellasDeEsperanza.PrejitAll.Library</PackageId>
@@ -26,7 +27,8 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <WarningsAsErrors>CS4014</WarningsAsErrors>
-        <IncludeSymbols>false</IncludeSymbols> 
+        <IncludeSymbols>false</IncludeSymbols>
+        <DefineConstants Condition="$(PackAsTool) == 'true'">$(DefineConstants);Tool</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
