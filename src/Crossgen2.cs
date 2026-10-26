@@ -43,7 +43,7 @@ public static class Crossgen2
 
         if (crossgenpath == null)
         {
-            var runtimes = DotnetInfo.GetCommonRuntimeConfig(path);
+            var runtimes = await DotnetInfo.GetCommonRuntimeConfig(path);
             var maxversion = runtimes
                 .OrderByDescending(r => r)
                 .FirstOrDefault();
@@ -99,14 +99,23 @@ public static class Crossgen2
             Logger.LogDebug($"= [{index + 1}/{allFiles.Length}] Prejitting \"{managedLibName}\"");
             Logger.LogDebug("==========================================================");
 
+            var frameworkReferences = await DotnetInfo.GetCommonRuntimeConfig(path);
+            var referenceArguments = string.Join(' ', frameworkReferences
+                .Select(r => $"-r \"{r.Path}{Path.DirectorySeparatorChar}{r.VersionId}{Path.DirectorySeparatorChar}*.dll\""));
+
             string tempR2Rname = managedLibName + ".ni";
-            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} -r *.dll --resilient -O -o {tempR2Rname} {customArg}");
+#if DEBUG
+            var verbose = true;
+#else
+            var verbose = false;
+#endif
+            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} {customArg}", null, path);
             if (File.Exists(tempR2Rname))
             {
                 long beforeSize = new FileInfo(managedLibName).Length;
                 long afterSize = new FileInfo(tempR2Rname).Length;
 
-                Logger.LogSuccess($"Size delta: {((afterSize - beforeSize) / 1024.0f):F0}Kb");
+                Logger.LogSuccess($"Compiled {managedLibName}, size delta: {((afterSize - beforeSize) / 1024.0f):F0}Kb");
 
                 totalAdditionalSize += afterSize - beforeSize;
 

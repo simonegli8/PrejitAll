@@ -102,14 +102,19 @@ public static class DotnetInfo
         return new List<Runtime>();
     }
 
-    public static List<Runtime> GetCommonRuntimeConfig(string path)
+    public static async Task<List<Runtime>> GetCommonRuntimeConfig(string path)
     {
+        var runtimes = await GetInstalledRuntimes();
         return Directory.EnumerateFiles(path, "*.json")
             .Where(file => file.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase))
             .SelectMany(file => ParseRuntimeConfig(file))
             .GroupBy(r => r.Name)
             .Select(g => g.OrderByDescending(r => r).FirstOrDefault())
             .OfType<Runtime>()
+            .Join(runtimes,
+                config => new { config.Name, config.VersionId },
+                r => new { r.Name, r.VersionId },
+                (config, r) => r)
             .ToList();
     }
 
@@ -138,9 +143,9 @@ public static class DotnetInfo
     {
         get
         {
-            var os = IsWindows ? "win" : (IsMac ? "osx" : IsLinux ? "linux" : "");
+            var os = IsWindows ? "windows" : (IsMac ? "osx" : IsLinux ? "linux" : "");
             var arch = RuntimeInformation.OSArchitecture.ToString().ToLowerInvariant();
-            var id = IsWindows ? "windows" : os;
+            var id = IsWindows ? "win" : os;
             if (IsLinuxMusl) id += $"-musl";
             return (RuntimeID: $"{id}-{arch}", OS: os, Arch: arch);
         }
@@ -161,13 +166,13 @@ public static class DotnetInfo
         var rid = RuntimeID;
         var url = $"https://www.nuget.org/api/v2/package/Microsoft.NETCore.App.Crossgen2.{rid.RuntimeID}/{versionid}";
         string tempfile = null;
-        var tempdir = Path.Combine(Path.GetTempPath(), "HostPanelPro.Crossgen2");
+        var tempdir = Path.Combine(Path.GetTempPath(), "PrejitAll");
         try
         {
             Logger.LogMessage("Downloading crossgen2...");
             tempfile = await DownloadFileAsync(url, "zip");
             await UnzipZipFile(tempfile, tempdir, file => file.StartsWith("tools/"));
-            return new TempCrossgen() { Filename = Path.Combine(tempdir, Crossgen2.Crossgen2Exe) };
+            return new TempCrossgen() { Filename = Path.Combine(tempdir, "tools", Crossgen2.Crossgen2Exe) };
         } catch (Exception ex)
         {
             Logger.LogError($"Error downloading crossget2: {ex.Message}");

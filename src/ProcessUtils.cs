@@ -41,12 +41,15 @@ public static class ProcessUtils
             process = Process.Start(processStartInfo)!;
             process.ErrorDataReceived += (_, e) =>
             {
+                if (e.Data == null) return;
                 if (verbose)
                     Logger.LogError(e.Data);
             };
             process.OutputDataReceived += (_, e) =>
             {
-                sb.Append(e.Data);
+                if (e.Data == null) return;
+
+                sb.AppendLine(e.Data);
                 if (verbose)
                 {
                     if (e.Data?.Contains("Emitting R2R") == true)

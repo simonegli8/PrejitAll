@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 
 namespace EstrellasDeEsperanza.PrejitAll;
 
@@ -6,7 +7,12 @@ public static class Logger
 {
     public static TextWriter Log = Console.Out;
     public static TextWriter Error = Console.Error;
-    public static void LogDebug(string? msg) => LogMessage(msg);
+    public static void LogDebug(string? msg)
+#if DEBUG
+        => LogMessage(msg);
+#else
+        { }
+#endif
 
     public static void LogSuccess(string? msg) => LogMessage(msg, ConsoleColor.Green);
 
