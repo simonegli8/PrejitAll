@@ -149,6 +149,11 @@ public static class DotnetInfo
         }
     }
 
+    /// <summary>
+    /// Returns the crossgen2 "--instruction-set" parameter targeting the instruction sets of the current CPU.
+    /// </summary>
+    public static string InstructionSet => "--instruction-set native,-optimistic";
+
     public static string? FindExistingCrossgen2(string versionid)
     {
         var rid = RuntimeID;

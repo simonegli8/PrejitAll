@@ -1,4 +1,7 @@
-﻿namespace EstrellasDeEsperanza.PrejitAll;
+﻿using System.Runtime.InteropServices;
+using System.Transactions;
+
+namespace EstrellasDeEsperanza.PrejitAll;
 
 public static class Crossgen2
 {
@@ -11,7 +14,7 @@ public static class Crossgen2
         Console.WriteLine();
         Console.WriteLine("Usage:");
         Console.WriteLine();
-        Console.WriteLine($"  prejitall [--crossgen path/to/{Crossgen2Exe}] <args for {Crossgen2Exe}>");
+        Console.WriteLine($"  prejitall [path] [path/to/{Crossgen2Exe}] [--nonative] <args for {Crossgen2Exe}>");
         Console.WriteLine();
         Console.WriteLine($"NOTE: if no args are passed it will try to locate system's {Crossgen2Exe} automatically or download it.");
         Console.WriteLine();
@@ -23,6 +26,12 @@ public static class Crossgen2
             PrintHelp();
             return;
         }
+        bool native = true;
+        if (args.Contains("--nonative"))
+        {
+            native = false;
+            args = args.Where(arg => arg != "--nonative").ToArray();
+        }
         var crossgenPath = args.Take(2).FirstOrDefault(arg => arg.EndsWith(Crossgen2Exe, StringComparison.OrdinalIgnoreCase) && File.Exists(arg));
         if (crossgenPath != null) {
             Logger.LogMessage($"Using crossgen2 from {crossgenPath}");
@@ -31,11 +40,11 @@ public static class Crossgen2
         var path = args.FirstOrDefault();
         args = args.Skip(1).ToArray();
 
-        await PrejitAllAsync(path, crossgenPath, args);
+        await PrejitAllAsync(path, crossgenPath, native, args);
     }
 #endif
 
-    public static async Task PrejitAllAsync(string? path, string? crossgenpath = null, params string[] customArgs) 
+    public static async Task PrejitAllAsync(string? path, string? crossgenpath = null, bool native = true, params string[] customArgs) 
     {
         string customArg = string.Join(" ", customArgs.Select(a => $"\"{a}\""));
 
@@ -107,7 +116,7 @@ public static class Crossgen2
                 .Select(r => $"-r \"{r.Path}{Path.DirectorySeparatorChar}{r.VersionId}{Path.DirectorySeparatorChar}*.dll\""));
 
             string tempR2Rname = managedLibName + ".ni";
-            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} {customArg}", null, path);
+            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname}{(native ? " --instruction - set native, -optimistic" : "")} {customArg}", null, path);
             if (File.Exists(tempR2Rname))
             {
                 long beforeSize = new FileInfo(managedLibName).Length;
