@@ -104,11 +104,6 @@ public static class Crossgen2
                 .Select(r => $"-r \"{r.Path}{Path.DirectorySeparatorChar}{r.VersionId}{Path.DirectorySeparatorChar}*.dll\""));
 
             string tempR2Rname = managedLibName + ".ni";
-#if DEBUG
-            var verbose = true;
-#else
-            var verbose = false;
-#endif
             await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} {customArg}", null, path);
             if (File.Exists(tempR2Rname))
             {

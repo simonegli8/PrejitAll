@@ -35,11 +35,11 @@ public class Runtime: IComparable<Runtime>
 
 public class TempCrossgen: IDisposable
 {
-    public string Filename;
+    public string Filename = "";
 
     public void Dispose()
     {
-        var dir = Path.GetDirectoryName(Filename);
+        string dir = Path.GetDirectoryName(Filename)!;
         Directory.Delete(dir, true);
     }
 }
@@ -135,7 +135,7 @@ public static class DotnetInfo
             info.RedirectStandardOutput = true;
             info.UseShellExecute = false;
             var p = Process.Start(info);
-            return p.StandardOutput.ReadToEnd().Contains("musl");
+            return p!.StandardOutput.ReadToEnd().Contains("musl");
         }
     }
 
@@ -165,7 +165,7 @@ public static class DotnetInfo
     {
         var rid = RuntimeID;
         var url = $"https://www.nuget.org/api/v2/package/Microsoft.NETCore.App.Crossgen2.{rid.RuntimeID}/{versionid}";
-        string tempfile = null;
+        string? tempfile = null;
         var tempdir = Path.Combine(Path.GetTempPath(), "PrejitAll");
         try
         {
@@ -182,7 +182,7 @@ public static class DotnetInfo
         }
         return null;
     }
-    private static async Task<string> DownloadFileAsync(string url, string extension = null)
+    private static async Task<string> DownloadFileAsync(string url, string? extension = null)
     {
         var web = new HttpClient();
         var tmp = Path.GetTempFileName();
@@ -199,7 +199,7 @@ public static class DotnetInfo
         var name = Regex.Replace(url, @"(.*?/)|(?:\?.*$)", "", RegexOptions.Singleline);
         return tmp;
     }
-    private static async Task UnzipZipFile(string zipFile, string destFolder, Func<string, bool> filter = null, Func<long, long, Task> progress = null)
+    private static async Task UnzipZipFile(string zipFile, string destFolder, Func<string, bool>? filter = null, Func<long, long, Task>? progress = null)
     {
         try
         {
@@ -226,7 +226,7 @@ public static class DotnetInfo
                         else
                         {
                             var filename = Path.Combine(destFolder, entry.FullName.Replace('/', Path.DirectorySeparatorChar));
-                            var dir = Path.GetDirectoryName(filename);
+                            string dir = Path.GetDirectoryName(filename)!;
                             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
                             entry.ExtractToFile(filename, true);
                             files++;
