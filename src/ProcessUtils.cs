@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
+namespace EstrellasDeEsperanza.PrejitAll;
+
 public static class ProcessUtils
 {
     public static async Task<string> RunProcessAsync(

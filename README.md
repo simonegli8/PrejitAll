@@ -15,5 +15,5 @@ NOTE: target directory is expected to have all possible dependencies (e.g. resul
 # Installation
 
 ```
-dotnet tool install -g prejitall
+dotnet tool install -g EstrellasDeEsperanza.PrejitAll
 ```

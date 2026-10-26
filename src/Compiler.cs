@@ -1,4 +1,6 @@
-﻿public static class PrejitAllTool
+﻿namespace EstrellasDeEsperanza.PrejitAll;
+
+public static class Compiler
 {
     public static readonly string Crossgen2Exe = OperatingSystem.IsWindows() ? "crossgen2.exe" : "crossgen2";
 
@@ -8,9 +10,9 @@
         Console.WriteLine();
         Console.WriteLine("Usage:");
         Console.WriteLine();
-        Console.WriteLine($"  prejitall path/to/{Crossgen2Exe} <args for {Crossgen2Exe}>");
+        Console.WriteLine($"  prejitall [--crossgen path/to/{Crossgen2Exe}] <args for {Crossgen2Exe}>");
         Console.WriteLine();
-        Console.WriteLine($"NOTE: if no args are passed it will try to locate system's {Crossgen2Exe} automatically");
+        Console.WriteLine($"NOTE: if no args are passed it will try to locate system's {Crossgen2Exe} automatically or download it.");
         Console.WriteLine();
     }
 
@@ -20,7 +22,7 @@
         if (args.Length == 0)
         {
             Logger.LogWarning($"{Crossgen2Exe} path is not specified, trying to find one in the nuget cache...");
-            crossgenPath = await DotnetInfo.FindExistingCrossgen2() ?? "";
+            crossgenPath = null;
 
             if (!File.Exists(crossgenPath))
                 Logger.LogError($"I was trying to find {Crossgen2Exe} in your nuget cache but with no luck\nMaybe it's not there yet? Try to run 'dotnet publish -c Release -r <RID> /p:PublishReadyToRun=true' for a console app, maybe that will populate it.");
@@ -35,15 +37,42 @@
             PrintHelp();
             return;
         }
-
-        string customArgs = string.Join(" ", args.Skip(1).Select(a => $"\"{a}\""));
+    }
+    public static async Task PrejitAll(string? path, string? crossgenpath = null, params string[] customArgs) 
+    {
+        string customArg = string.Join(" ", customArgs.Select(a => $"\"{a}\""));
 
         long totalAdditionalSize = 0;
 
-        string[] allFiles = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.dll");
+        path ??= Directory.GetCurrentDirectory();
+        TempCrossgen? tempCrossgen = null;
+
+        if (crossgenpath == null)
+        {
+            var runtimes = DotnetInfo.GetCommonRuntimeConfig(path);
+            var maxversion = runtimes
+                .OrderByDescending(r => r)
+                .FirstOrDefault();
+            if (maxversion == null)
+            {
+                Logger.LogError("No *.runtimeconfig.json files found in path");
+                return;
+            }
+            crossgenpath = DotnetInfo.FindExistingCrossgen2(maxversion.VersionId);
+            if (crossgenpath == null)
+            {
+                tempCrossgen = await DotnetInfo.DownloadCrossgen2(maxversion.VersionId);
+                if (tempCrossgen != null) crossgenpath = tempCrossgen.Filename;
+                else return;
+            }
+        }
+
+        using var temp = tempCrossgen;
+
+        string[] allFiles = Directory.GetFiles(path, "*.dll");
 
         // Don't waste time on these on Windows:
-        string[] knownNativeLibs =
+        HashSet<string> knownNativeLibs = new HashSet<string>()
         {
             "clretwrc.dll",
             "clrgc.dll",
@@ -77,7 +106,7 @@
             Logger.LogDebug("==========================================================");
 
             string tempR2Rname = managedLibName + ".ni";
-            await ProcessUtils.RunProcessAsync(crossgenPath, $"{managedLibName} -r *.dll --resilient -O -o {tempR2Rname} " + customArgs);
+            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} -r *.dll --resilient -O -o {tempR2Rname} {customArg}");
             if (File.Exists(tempR2Rname))
             {
                 long beforeSize = new FileInfo(managedLibName).Length;
