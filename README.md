@@ -1,14 +1,13 @@
 # PrejitAll
 
-A helper tool to prejit everything in the current folder in just one command. 
+A cross platform helper tool to prejit everything using Ready2Run in the current folder in just one command. 
 
 # Usage
 
 ```ps1
-cd folder/with/managed/libs
-dotnet prejitall
+prejitall [path to dlls] { custom crossgen options }
 # or if you want to use a custom crossgen2.exe:
-dotnet prejitall C:\prj\runtime-main\artifacts\bin\coreclr\windows.x64.Checked\crossgen2\crossgen2.exe
+prejitall [path to dlls] [path to crossgen2.exe] { custom crossgen options }
 ```
 NOTE: target directory is expected to have all possible dependencies (e.g. result of `dotnet publish` command).
 
@@ -16,4 +15,15 @@ NOTE: target directory is expected to have all possible dependencies (e.g. resul
 
 ```
 dotnet tool install -g EstrellasDeEsperanza.PrejitAll
+```
+
+# Library
+You can also use the EstrellasDeEsperanza.PrejitAll.Library nuget package and then call prejitall like so:
+
+```
+using EstrellasDeEsperanza.PrejitAll;
+...
+Crossgen2.PrejitAll(path);
+or
+Crossgen2.PrejitAll(path, crossgen2path, crossgenArgument1, crossgenArgument2, ...);
 ```

@@ -151,7 +151,7 @@ public static class DotnetInfo
         var rid = RuntimeID;
 
         string crossgenPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".nuget", "packages", $"microsoft.netcore.app.crossgen2.{rid.RuntimeID}", versionid, "tools", Compiler.Crossgen2Exe);
+                ".nuget", "packages", $"microsoft.netcore.app.crossgen2.{rid.RuntimeID}", versionid, "tools", Crossgen2.Crossgen2Exe);
         if (File.Exists(crossgenPath)) return crossgenPath;
         return null;
     }
@@ -167,7 +167,7 @@ public static class DotnetInfo
             Logger.LogMessage("Downloading crossgen2...");
             tempfile = await DownloadFileAsync(url, "zip");
             await UnzipZipFile(tempfile, tempdir, file => file.StartsWith("tools/"));
-            return new TempCrossgen() { Filename = Path.Combine(tempdir, Compiler.Crossgen2Exe) };
+            return new TempCrossgen() { Filename = Path.Combine(tempdir, Crossgen2.Crossgen2Exe) };
         } catch (Exception ex)
         {
             Logger.LogError($"Error downloading crossget2: {ex.Message}");

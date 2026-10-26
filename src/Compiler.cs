@@ -1,6 +1,6 @@
 ﻿namespace EstrellasDeEsperanza.PrejitAll;
 
-public static class Compiler
+public static class Crossgen2
 {
     public static readonly string Crossgen2Exe = OperatingSystem.IsWindows() ? "crossgen2.exe" : "crossgen2";
 
@@ -18,25 +18,19 @@ public static class Compiler
 
     public static async Task Main(string[] args)
     {
-        string crossgenPath;
-        if (args.Length == 0)
-        {
-            Logger.LogWarning($"{Crossgen2Exe} path is not specified, trying to find one in the nuget cache...");
-            crossgenPath = null;
-
-            if (!File.Exists(crossgenPath))
-                Logger.LogError($"I was trying to find {Crossgen2Exe} in your nuget cache but with no luck\nMaybe it's not there yet? Try to run 'dotnet publish -c Release -r <RID> /p:PublishReadyToRun=true' for a console app, maybe that will populate it.");
-        }
-        else
-        {
-            crossgenPath = args[0];
-        }
-
-        if (!crossgenPath.EndsWith(Crossgen2Exe, StringComparison.OrdinalIgnoreCase) || !File.Exists(crossgenPath))
-        {
+        if (args.Contains("--help") || args.Contains("-?")) {
             PrintHelp();
             return;
         }
+        var crossgenPath = args.Take(2).FirstOrDefault(arg => arg.EndsWith(Crossgen2Exe, StringComparison.OrdinalIgnoreCase) && File.Exists(arg));
+        if (crossgenPath != null) {
+            Logger.LogMessage($"Using crossgen2 from {crossgenPath}");
+            args = args.Where(arg => arg != crossgenPath).ToArray();
+        }
+        var path = args.FirstOrDefault();
+        args = args.Skip(1).ToArray();
+
+        await PrejitAll(path, crossgenPath, args);
     }
     public static async Task PrejitAll(string? path, string? crossgenpath = null, params string[] customArgs) 
     {
