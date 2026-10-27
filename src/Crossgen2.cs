@@ -64,7 +64,7 @@ public static class Crossgen2
                 Logger.LogError("No *.runtimeconfig.json files found in path");
                 return;
             }
-            native &= maxversion.Version.Major >= 11; // only use --instruction-set native for corssgen2 v11 or above
+            native &= maxversion.Version.Major >= 11; // only use --instruction-set native for crossgen2 v11 or above
 
             crossgenpath = DotnetInfo.FindExistingCrossgen2(maxversion.VersionId);
             if (crossgenpath == null)
@@ -110,7 +110,6 @@ public static class Crossgen2
 
         var rid = DotnetInfo.RuntimeID;
 
-
         for (var index = 0; index < allFiles.Length; index++)
         {
             if (cancel?.IsCancellationRequested == true) break;
@@ -123,8 +122,9 @@ public static class Crossgen2
             Logger.LogDebug("==========================================================");
 
             string tempR2Rname = managedLibName + ".ni";
+            var tempR2Rfile = Path.Combine(path, tempR2Rname);
             await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} --targetos {rid.OS} --targetarch {rid.Arch}{(native ? " --instruction-set native,-optimistic" : "")} {customArg}", null, path);
-            if (File.Exists(tempR2Rname))
+            if (File.Exists(tempR2Rfile))
             {
                 long beforeSize = new FileInfo(managedLibName).Length;
                 long afterSize = new FileInfo(tempR2Rname).Length;
@@ -134,7 +134,7 @@ public static class Crossgen2
                 totalAdditionalSize += afterSize - beforeSize;
 
                 File.Delete(file);
-                File.Move(Path.Combine(path, tempR2Rname), file);
+                File.Move(tempR2Rfile, file);
             }
         }
 
