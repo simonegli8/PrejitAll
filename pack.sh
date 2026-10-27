@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
 
-PackageVersion="3.2.2"
-Configuration="Debug"
+PackageVersion="2.0.2"
+Configuration="Release"
 
 rm -f nupkg/*.nupkg
 rm -f nupkg/*.snupkg
 
-dotnet pack AspNetCoreSharedServer.slnx \
-    -c "$Configuration" \
+dotnet pack PrejitAll.slnx -c "$Configuration" \
     -p:Version="$PackageVersion" \
     -p:FileVersion="${PackageVersion}.0" \
     -p:AssemblyVersion="$PackageVersion"
 
-dotnet pack AspNetCoreSharedServer.slnx \
-    -c "$Configuration" \
+dotnet pack PrejitAll.slnx -c "$Configuration" \
     -p:Version="$PackageVersion" \
     -p:FileVersion="${PackageVersion}.0" \
     -p:AssemblyVersion="$PackageVersion" \
@@ -21,3 +19,19 @@ dotnet pack AspNetCoreSharedServer.slnx \
     -p:DebugSymbols=true \
     -p:IncludeSymbols=true \
     -p:SymbolPackageFormat=snupkg
+
+dotnet pack PrejitAll.slnx -c "$Configuration" \
+    -p:Version="$PackageVersion" \
+    -p:FileVersion="${PackageVersion}.0" \
+    -p:AssemblyVersion="$PackageVersion" \
+    -p:PackAsTool=false
+
+dotnet pack PrejitAll.slnx -c "$Configuration" \
+    -p:Version="$PackageVersion" \
+    -p:FileVersion="${PackageVersion}.0" \
+    -p:AssemblyVersion="$PackageVersion" \
+    -p:DebugType=portable \
+    -p:DebugSymbols=true \
+    -p:IncludeSymbols=true \
+    -p:SymbolPackageFormat=snupkg \
+    -p:PackAsTool=false

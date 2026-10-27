@@ -101,7 +101,8 @@ public static class DotnetInfo
 
     public static async Task<List<Runtime>> GetCommonRuntimeConfig(string path)
     {
-        var runtimes = await GetInstalledRuntimes();
+        var runtimes = (await GetInstalledRuntimes())
+            .GroupBy(r => r.Name);
         return Directory.EnumerateFiles(path, "*.json")
             .Where(file => file.EndsWith(".runtimeconfig.json", StringComparison.OrdinalIgnoreCase))
             .SelectMany(file => ParseRuntimeConfig(file))
@@ -109,9 +110,9 @@ public static class DotnetInfo
             .Select(g => g.OrderByDescending(r => r).FirstOrDefault())
             .OfType<Runtime>()
             .Join(runtimes,
-                config => new { config.Name, config.VersionId },
-                r => new { r.Name, r.VersionId },
-                (config, r) => r)
+                config => config.Name,
+                r => r.Key,
+                (config, rs) => rs.FirstOrDefault(r => r.CompareTo(config) >= 0))
             .ToList();
     }
 

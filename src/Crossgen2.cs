@@ -64,6 +64,8 @@ public static class Crossgen2
                 Logger.LogError("No *.runtimeconfig.json files found in path");
                 return;
             }
+            native &= maxversion.Version.Major >= 11; // only use --instruction-set native for corssgen2 v11 or above
+
             crossgenpath = DotnetInfo.FindExistingCrossgen2(maxversion.VersionId);
             if (crossgenpath == null)
             {
@@ -73,8 +75,8 @@ public static class Crossgen2
             }
         }
 
-        using var temp = tempCrossgen;
-
+        //using var temp = tempCrossgen;
+        
         string[] allFiles = Directory.GetFiles(path, "*.dll");
 
         // Don't waste time on these on Windows:
@@ -102,6 +104,13 @@ public static class Crossgen2
             return;
         }
 
+        var frameworkReferences = await DotnetInfo.GetCommonRuntimeConfig(path);
+        var referenceArguments = string.Join(" ", frameworkReferences
+            .Select(r => $"-r \"{r.Path}{Path.DirectorySeparatorChar}{r.VersionId}{Path.DirectorySeparatorChar}*.dll\""));
+
+        var rid = DotnetInfo.RuntimeID;
+
+
         for (var index = 0; index < allFiles.Length; index++)
         {
             string file = allFiles[index];
@@ -111,12 +120,8 @@ public static class Crossgen2
             Logger.LogDebug($"= [{index + 1}/{allFiles.Length}] Prejitting \"{managedLibName}\"");
             Logger.LogDebug("==========================================================");
 
-            var frameworkReferences = await DotnetInfo.GetCommonRuntimeConfig(path);
-            var referenceArguments = string.Join(" ", frameworkReferences
-                .Select(r => $"-r \"{r.Path}{Path.DirectorySeparatorChar}{r.VersionId}{Path.DirectorySeparatorChar}*.dll\""));
-
             string tempR2Rname = managedLibName + ".ni";
-            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname}{(native ? " --instruction - set native, -optimistic" : "")} {customArg}", null, path);
+            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} --targetos {rid.OS} --targetarch {rid.Arch}{(native ? " --instruction-set native,-optimistic" : "")} {customArg}", null, path);
             if (File.Exists(tempR2Rname))
             {
                 long beforeSize = new FileInfo(managedLibName).Length;
@@ -127,7 +132,7 @@ public static class Crossgen2
                 totalAdditionalSize += afterSize - beforeSize;
 
                 File.Delete(file);
-                File.Move(tempR2Rname, file);
+                File.Move(Path.Combine(path, tempR2Rname), file);
             }
         }
 
