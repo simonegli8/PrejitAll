@@ -126,8 +126,8 @@ public static class Crossgen2
             await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} --targetos {rid.OS} --targetarch {rid.Arch}{(native ? " --instruction-set native,-optimistic" : "")} {customArg}", null, path);
             if (File.Exists(tempR2Rfile))
             {
-                long beforeSize = new FileInfo(managedLibName).Length;
-                long afterSize = new FileInfo(tempR2Rname).Length;
+                long beforeSize = new FileInfo(file).Length;
+                long afterSize = new FileInfo(tempR2Rfile).Length;
 
                 Logger.LogSuccess($"Compiled {managedLibName}, size delta: {((afterSize - beforeSize) / 1024.0f):F0}Kb");
 
