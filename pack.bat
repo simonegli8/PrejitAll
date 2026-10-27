@@ -22,7 +22,7 @@ dotnet pack PrejitAll.slnx -c %Configuration% ^
     -p:Version=%PackageVersion% ^
     -p:FileVersion=%PackageVersion%.0 ^
     -p:AssemblyVersion=%PackageVersion% ^
-    -p:PackAsTool=false
+    -p:PackAsTool=true
 
 dotnet pack PrejitAll.slnx -c %Configuration% ^
     -p:Version=%PackageVersion% ^
@@ -32,4 +32,4 @@ dotnet pack PrejitAll.slnx -c %Configuration% ^
     -p:DebugSymbols=true ^
     -p:IncludeSymbols=true ^
     -p:SymbolPackageFormat=snupkg ^
-    -p:PackAsTool=false
+    -p:PackAsTool=true
