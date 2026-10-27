@@ -40,11 +40,11 @@ public static class Crossgen2
         var path = args.FirstOrDefault();
         args = args.Skip(1).ToArray();
 
-        await PrejitAllAsync(path, crossgenPath, native, args);
+        await PrejitAllAsync(path, crossgenPath, native, null, args);
     }
 #endif
 
-    public static async Task PrejitAllAsync(string? path, string? crossgenpath = null, bool native = true, params string[] customArgs) 
+    public static async Task PrejitAllAsync(string? path, string? crossgenpath = null, bool native = true, CancellationToken? cancel = null, params string[] customArgs) 
     {
         string customArg = string.Join(" ", customArgs.Select(a => $"\"{a}\""));
 
@@ -113,6 +113,8 @@ public static class Crossgen2
 
         for (var index = 0; index < allFiles.Length; index++)
         {
+            if (cancel?.IsCancellationRequested == true) break;
+
             string file = allFiles[index];
             string managedLibName = Path.GetFileName(file);
 
