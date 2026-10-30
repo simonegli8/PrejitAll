@@ -14,7 +14,7 @@ public static class Crossgen2
         Console.WriteLine();
         Console.WriteLine("Usage:");
         Console.WriteLine();
-        Console.WriteLine($"  prejitall [path] [path/to/{Crossgen2Exe}] [--nonative] <args for {Crossgen2Exe}>");
+        Console.WriteLine($"  prejitall [path] [path/to/{Crossgen2Exe}] [--nonative] [--verbose] <args for {Crossgen2Exe}>");
         Console.WriteLine();
         Console.WriteLine($"NOTE: if no args are passed it will try to locate system's {Crossgen2Exe} automatically or download it.");
         Console.WriteLine();
@@ -26,7 +26,7 @@ public static class Crossgen2
             PrintHelp();
             return;
         }
-        bool native = true;
+        bool native = true, verbose = false;
         if (args.Contains("--nonative"))
         {
             native = false;
@@ -38,7 +38,8 @@ public static class Crossgen2
             args = args.Where(arg => arg != crossgenPath).ToArray();
         }
         var path = args.FirstOrDefault();
-        args = args.Skip(1).ToArray();
+        if (!path.StartsWith("--")) args = args.Skip(1).ToArray();
+        else path = null;
 
         await PrejitAllAsync(path, crossgenPath, native, null, args);
     }
@@ -46,6 +47,13 @@ public static class Crossgen2
 
     public static async Task PrejitAllAsync(string? path, string? crossgenpath = null, bool native = true, CancellationToken? cancel = null, params string[] customArgs) 
     {
+        bool verbose = false;
+        if (customArgs.Contains("--verbose"))
+        {
+            verbose = true;
+            customArgs = customArgs.Where(arg => arg != "--verbose").ToArray();
+        }
+
         string customArg = string.Join(" ", customArgs.Select(a => $"\"{a}\""));
 
         long totalAdditionalSize = 0;
@@ -110,6 +118,7 @@ public static class Crossgen2
 
         var rid = DotnetInfo.RuntimeID;
 
+        bool error = false;
         for (var index = 0; index < allFiles.Length; index++)
         {
             if (cancel?.IsCancellationRequested == true) break;
@@ -123,7 +132,9 @@ public static class Crossgen2
 
             string tempR2Rname = managedLibName + ".ni";
             var tempR2Rfile = Path.Combine(path, tempR2Rname);
-            await ProcessUtils.RunProcessAsync(crossgenpath, $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} --targetos {rid.OS} --targetarch {rid.Arch}{(native ? " --instruction-set native,-optimistic" : "")} {customArg}", null, path);
+            var args = $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} --targetos {rid.OS} --targetarch {rid.Arch}{(native ? " --instruction-set native" : "")} {customArg}";
+            if (verbose) Logger.LogMessage($"crossgen2 {args}");
+            await ProcessUtils.RunProcessAsync(crossgenpath, args, null, path);
             if (File.Exists(tempR2Rfile))
             {
                 long beforeSize = new FileInfo(file).Length;
@@ -135,6 +146,10 @@ public static class Crossgen2
 
                 File.Delete(file);
                 File.Move(tempR2Rfile, file);
+            }
+            else
+            {
+                error = true;
             }
         }
 

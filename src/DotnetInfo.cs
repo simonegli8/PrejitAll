@@ -173,7 +173,7 @@ public static class DotnetInfo
         var tempdir = Path.Combine(Path.GetTempPath(), "PrejitAll");
         try
         {
-            Logger.LogMessage("Downloading crossgen2...");
+            Logger.LogMessage($"Downloading crossgen2 {versionid}...");
             tempfile = await DownloadFileAsync(url, "zip");
             await UnzipZipFile(tempfile, tempdir, file => file.StartsWith("tools/"));
             if (!IsWindows) await ProcessUtils.RunProcessAsync("chmod", $"+x \"{Path.Combine(tempdir, "tools", "crossgen2")}\"");

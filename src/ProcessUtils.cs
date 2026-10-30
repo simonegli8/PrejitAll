@@ -84,6 +84,7 @@ public static class ProcessUtils
                 CreateNoWindow = true,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
+                RedirectStandardInput = true,
                 Arguments = args,
             };
 
@@ -100,6 +101,12 @@ public static class ProcessUtils
             process.ErrorDataReceived += (_, e) =>
             {
                 if (e.Data == null) return;
+                Task.Run(async () =>
+                {
+                    await Task.Delay(300);
+                    process.StandardInput.WriteLine();
+                    process.Kill();
+                });
                 if (verbose)
                     Logger.LogError(e.Data);
             };
@@ -121,15 +128,17 @@ public static class ProcessUtils
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 #if NETCOREAPP
-            await process.WaitForExitAsync();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+            await process.WaitForExitAsync(cts.Token);
 #else
             if (DotnetInfo.IsCore)
             {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
                 var type = typeof(Process);
                 var waitForExitAsync = type.GetMethod("WaitForExitAsync");
-                var task = (Task)waitForExitAsync.Invoke(process, Array.Empty<object>());
+                var task = (Task)waitForExitAsync.Invoke(process, new object[] {cts });
                 await task;
-            } else process.WaitForExit();
+            } else process.WaitForExit(120_000);
 #endif
         }
         catch (Exception e)
