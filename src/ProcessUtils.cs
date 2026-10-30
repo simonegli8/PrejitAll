@@ -154,13 +154,13 @@ public static class ProcessUtils
             } else  {
                  if (timeout != null)
                 {
-                    process.WaitForExit((int)timeout.TotalMilliseconds);
+                    process.WaitForExit((int)((TimeSpan)timeout).TotalMilliseconds);
                 } else {
                     process.WaitForExit();
                 }
             }
 #endif
-    }
+        }
         catch (Exception e)
         {
             if (verbose)
