@@ -68,7 +68,8 @@ public static class ProcessUtils
         string args = "",
         Dictionary<string, string>? envVars = null,
         string? workingDir = null,
-        bool verbose = true)
+        bool verbose = true,
+        TimeSpan? timeout = null)
     {
         var sb = new StringBuilder();
         if (verbose)
@@ -115,37 +116,56 @@ public static class ProcessUtils
                 if (e.Data == null) return;
 
                 sb.AppendLine(e.Data);
-                if (verbose)
+                if (e.Data?.Contains("Emitting R2R") == true)
                 {
-                    if (e.Data?.Contains("Emitting R2R") == true)
-                        Logger.LogSuccess("Successfully prejitted.");
-                    else if (e.Data?.Contains("No input files are loadable") == true)
-                        Logger.LogWarning("Not a managed lib");
-                    else
-                        Logger.LogDebug(e.Data);
+                    if (verbose) Logger.LogDebug(e.Data);
+                    Logger.LogSuccess("Successfully prejitted.");
                 }
+                else if (e.Data?.Contains("No input files are loadable") == true)
+                {
+                    if (verbose) Logger.LogDebug(e.Data);
+                    Logger.LogWarning("Not a managed lib");
+                }
+                else if (verbose) Logger.LogDebug(e.Data);
             };
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
 #if NETCOREAPP
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
+        if (timeout != null)
+        {
+            using var cts = new CancellationTokenSource((TimeSpan)timeout);
             await process.WaitForExitAsync(cts.Token);
+        }
+        else await process.WaitForExitAsync();
 #else
             if (DotnetInfo.IsCore)
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120));
                 var type = typeof(Process);
                 var waitForExitAsync = type.GetMethod("WaitForExitAsync");
-                var task = (Task)waitForExitAsync.Invoke(process, new object[] {cts });
+                Task task;
+                if (timeout != null)
+                {
+                    using var cts = new CancellationTokenSource((TimeSpan)timeout);
+                    task = (Task)waitForExitAsync.Invoke(process, new object[] {cts });
+                } else {
+                    task = (Task)waitForExitAsync.Invoke(process, Array.Empty<object>());                
+                }
                 await task;
-            } else process.WaitForExit(120_000);
+            } else  {
+                 if (timeout != null)
+                {
+                    process.WaitForExit((int)timeout.TotalMilliseconds);
+                } else {
+                    process.WaitForExit();
+                }
+            }
 #endif
-        }
+    }
         catch (Exception e)
         {
             if (verbose)
                 Logger.LogError(e.Message);
-        }
+}
         finally
         {
             if (process is { HasExited: false })

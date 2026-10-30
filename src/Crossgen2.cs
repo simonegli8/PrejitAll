@@ -1,10 +1,10 @@
-﻿using System.Runtime.InteropServices;
-using System.Transactions;
+﻿using System.Reflection;
 
 namespace EstrellasDeEsperanza.PrejitAll;
 
 public static class Crossgen2
 {
+    public static TimeSpan Timeout = TimeSpan.FromMinutes(5);
     public static readonly string Crossgen2Exe = DotnetInfo.IsWindows ? "crossgen2.exe" : "crossgen2";
 
 #if Tool
@@ -22,6 +22,9 @@ public static class Crossgen2
 
     public static async Task Main(string[] args)
     {
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        Console.WriteLine($"prejitall {version!.ToString(3)}");
+
         if (args.Contains("--help") || args.Contains("-?")) {
             PrintHelp();
             return;
@@ -38,7 +41,7 @@ public static class Crossgen2
             args = args.Where(arg => arg != crossgenPath).ToArray();
         }
         var path = args.FirstOrDefault();
-        if (!path.StartsWith("--")) args = args.Skip(1).ToArray();
+        if (path != null && !path.StartsWith("--")) args = args.Skip(1).ToArray();
         else path = null;
 
         await PrejitAllAsync(path, crossgenPath, native, null, args);
@@ -51,7 +54,6 @@ public static class Crossgen2
         if (customArgs.Contains("--verbose"))
         {
             verbose = true;
-            customArgs = customArgs.Where(arg => arg != "--verbose").ToArray();
         }
 
         string customArg = string.Join(" ", customArgs.Select(a => $"\"{a}\""));
@@ -126,21 +128,23 @@ public static class Crossgen2
             string file = allFiles[index];
             string managedLibName = Path.GetFileName(file);
 
-            Logger.LogDebug("==========================================================");
-            Logger.LogDebug($"= [{index + 1}/{allFiles.Length}] Prejitting \"{managedLibName}\"");
-            Logger.LogDebug("==========================================================");
+            if (verbose)
+            {
+                Logger.LogDebug("==========================================================");
+                Logger.LogDebug($"= [{index + 1}/{allFiles.Length}] Prejitting \"{managedLibName}\"");
+                Logger.LogDebug("==========================================================");
+            }
 
             string tempR2Rname = managedLibName + ".ni";
             var tempR2Rfile = Path.Combine(path, tempR2Rname);
             var args = $"{managedLibName} {referenceArguments} -r *.dll --resilient -O -o {tempR2Rname} --targetos {rid.OS} --targetarch {rid.Arch}{(native ? " --instruction-set native" : "")} {customArg}";
-            if (verbose) Logger.LogMessage($"crossgen2 {args}");
-            await ProcessUtils.RunProcessAsync(crossgenpath, args, null, path);
+            await ProcessUtils.RunProcessAsync(crossgenpath, args, null, path, verbose, Timeout);
             if (File.Exists(tempR2Rfile))
             {
                 long beforeSize = new FileInfo(file).Length;
                 long afterSize = new FileInfo(tempR2Rfile).Length;
 
-                Logger.LogSuccess($"Compiled {managedLibName}, size delta: {((afterSize - beforeSize) / 1024.0f):F0}Kb");
+                Logger.LogSuccess($"Compiled {managedLibName}, size delta: {((afterSize - beforeSize) / 1024.0f):F0}Kb, {((index+1)*100)/allFiles.Length}%");
 
                 totalAdditionalSize += afterSize - beforeSize;
 
